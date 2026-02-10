@@ -28,7 +28,7 @@ func NewSubscriptionHandler(svc service.ISubscriptionService, logger zerolog.Log
 // @Accept json
 // @Produce json
 // @Param body body dto.CreateSubscriptionRequest true "Create Subscription"
-// @Success 200 {object} dto.SubscriptionResponse
+// @Success 200 {object} dto.CreateSubscriptionResponse
 // @Failure 400 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /subscription [post]
@@ -197,7 +197,7 @@ func (h *SubscriptionHandler) DeleteSubscription(c *fiber.Ctx) error {
 	return c.SendStatus(http.StatusNoContent)
 }
 
-// @Summary List subscriptions
+// @Summary List of subscriptions
 // @Produce json
 // @Param limit query int false "Limit"
 // @Param offset query int false "Offset"
@@ -234,7 +234,7 @@ func (h *SubscriptionHandler) ListSubscriptions(c *fiber.Ctx) error {
 	return c.JSON(MapDomainSubscriptionsToDTO(items, total))
 }
 
-// @Summary List subscriptions with filters
+// @Summary List of subscriptions with filters
 // @Produce json
 // @Param user_id query string false "User ID"
 // @Param service_name query string false "Service Name"
