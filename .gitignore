@@ -1,0 +1,10 @@
+# IDE / Editor
+.vscode/
+.idea/
+
+bin
+
+# Environment files
+.env
+.env.*
+!.env.example
