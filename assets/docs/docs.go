@@ -20,7 +20,7 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
-                "summary": "List subscriptions",
+                "summary": "List of subscriptions",
                 "parameters": [
                     {
                         "type": "integer",
@@ -73,7 +73,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.SubscriptionResponse"
+                            "$ref": "#/definitions/dto.CreateSubscriptionResponse"
                         }
                     },
                     "400": {
@@ -96,7 +96,7 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
-                "summary": "List subscriptions with filters",
+                "summary": "List of subscriptions with filters",
                 "parameters": [
                     {
                         "type": "string",
@@ -269,6 +269,31 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "end_date": {
+                    "type": "string",
+                    "example": "12-2026"
+                },
+                "price": {
+                    "type": "integer",
+                    "example": 599
+                },
+                "service_name": {
+                    "type": "string",
+                    "example": "Netflix"
+                },
+                "start_date": {
+                    "type": "string",
+                    "example": "01-2026"
+                },
+                "user_id": {
+                    "type": "string",
+                    "example": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+                }
+            }
+        },
+        "dto.CreateSubscriptionResponse": {
+            "type": "object",
+            "properties": {
+                "end_date": {
                     "type": "string"
                 },
                 "price": {
@@ -332,26 +357,22 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "end_date": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "11-2026"
                 },
                 "price": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 299
                 },
                 "service_name": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Spotify"
                 },
                 "start_date": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "02-2026"
                 }
             }
-        }
-    },
-    "securityDefinitions": {
-        "BearerAuth": {
-            "description": "Type \"Bearer\" followed by a space and a JWT.",
-            "type": "apiKey",
-            "name": "Authorization",
-            "in": "header"
         }
     }
 }`

@@ -8,6 +8,24 @@ definitions:
   dto.CreateSubscriptionRequest:
     properties:
       end_date:
+        example: 12-2026
+        type: string
+      price:
+        example: 599
+        type: integer
+      service_name:
+        example: Netflix
+        type: string
+      start_date:
+        example: 01-2026
+        type: string
+      user_id:
+        example: bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb
+        type: string
+    type: object
+  dto.CreateSubscriptionResponse:
+    properties:
+      end_date:
         type: string
       price:
         type: integer
@@ -49,12 +67,16 @@ definitions:
   dto.UpdateSubscriptionRequest:
     properties:
       end_date:
+        example: 11-2026
         type: string
       price:
+        example: 299
         type: integer
       service_name:
+        example: Spotify
         type: string
       start_date:
+        example: 02-2026
         type: string
     type: object
 host: localhost:8080
@@ -86,7 +108,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/HTTPError'
-      summary: List subscriptions
+      summary: List of subscriptions
     post:
       consumes:
       - application/json
@@ -103,7 +125,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.SubscriptionResponse'
+            $ref: '#/definitions/dto.CreateSubscriptionResponse'
         "400":
           description: Bad Request
           schema:
@@ -219,11 +241,5 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/HTTPError'
-      summary: List subscriptions with filters
-securityDefinitions:
-  BearerAuth:
-    description: Type "Bearer" followed by a space and a JWT.
-    in: header
-    name: Authorization
-    type: apiKey
+      summary: List of subscriptions with filters
 swagger: "2.0"
