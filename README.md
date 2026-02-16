@@ -1,5 +1,4 @@
 # Сервис subscribe-be
-## (Тестовое задание для **Effective Mobile**)
 
 ## Стек
   * Go
