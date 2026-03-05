@@ -22,9 +22,13 @@ func pgtypeToUUID(pg pgtype.UUID) (uuid.UUID, error) {
 	return uuid.FromBytes(pg.Bytes[:])
 }
 
-func timeToPGDate(t time.Time) pgtype.Date {
+func timePtrToPGDate(t *time.Time) pgtype.Date {
+	if t == nil {
+		return pgtype.Date{Valid: false}
+	}
+
 	return pgtype.Date{
-		Time:  t,
+		Time:  *t,
 		Valid: true,
 	}
 }
@@ -34,13 +38,6 @@ func pgTimestamptzToTime(ts pgtype.Timestamptz) (time.Time, error) {
 		return time.Time{}, fmt.Errorf("invalid timestamptz")
 	}
 	return ts.Time, nil
-}
-
-func pgDateToTime(d pgtype.Date) (*time.Time, error) {
-	if !d.Valid {
-		return nil, nil
-	}
-	return &d.Time, nil
 }
 
 func derefString(s *string) string {

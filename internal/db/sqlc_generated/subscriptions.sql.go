@@ -51,17 +51,17 @@ func (q *Queries) CreateSubscription(ctx context.Context, db DBTX, arg CreateSub
 	return &i, err
 }
 
-const deleteSubscription = `-- name: DeleteSubscription :exec
+const deleteSubscription = `-- name: DeleteSubscription :execrows
 DELETE FROM subscriptions
 WHERE id = $1
 `
 
-func (q *Queries) DeleteSubscription(ctx context.Context, db DBTX, id pgtype.UUID) error {
-	_, err := db.Exec(ctx, deleteSubscription, id)
+func (q *Queries) DeleteSubscription(ctx context.Context, db DBTX, id pgtype.UUID) (int64, error) {
+	result, err := db.Exec(ctx, deleteSubscription, id)
 	if err != nil {
-		return fmt.Errorf("query DeleteSubscription: %w", err)
+		return 0, fmt.Errorf("query DeleteSubscription: %w", err)
 	}
-	return nil
+	return result.RowsAffected(), nil
 }
 
 const getSubscription = `-- name: GetSubscription :one
@@ -130,55 +130,51 @@ func (q *Queries) ListSubscriptions(ctx context.Context, db DBTX, arg ListSubscr
 	return items, nil
 }
 
-const listSubscriptionsFiltered = `-- name: ListSubscriptionsFiltered :many
-SELECT id, service_name, price, user_id, start_date, end_date, created_at, updated_at
+const subscriptionsTotalCost = `-- name: SubscriptionsTotalCost :one
+SELECT COALESCE(SUM(price), 0)::bigint AS total_cost
 FROM subscriptions
 WHERE
     ($1::uuid IS NULL OR user_id = $1)
-    AND ($2::text IS NULL OR service_name = $2)
-ORDER BY created_at DESC
-LIMIT $3 OFFSET $4
+AND ($2::text IS NULL OR service_name = $2)
+AND ($3::date IS NULL OR start_date >= $3)
+AND ($4::date IS NULL OR (end_date IS NOT NULL AND end_date <= $4))
 `
 
-type ListSubscriptionsFilteredParams struct {
-	Column1 pgtype.UUID `db:"column_1"`
-	Column2 string      `db:"column_2"`
-	Limit   int32       `db:"limit"`
-	Offset  int32       `db:"offset"`
+type SubscriptionsTotalCostParams struct {
+	UserID      pgtype.UUID `db:"user_id"`
+	ServiceName *string     `db:"service_name"`
+	StartDate   pgtype.Date `db:"start_date"`
+	EndDate     pgtype.Date `db:"end_date"`
 }
 
-func (q *Queries) ListSubscriptionsFiltered(ctx context.Context, db DBTX, arg ListSubscriptionsFilteredParams) ([]*Subscription, error) {
-	rows, err := db.Query(ctx, listSubscriptionsFiltered,
-		arg.Column1,
-		arg.Column2,
-		arg.Limit,
-		arg.Offset,
+func (q *Queries) SubscriptionsTotalCost(ctx context.Context, db DBTX, arg SubscriptionsTotalCostParams) (int64, error) {
+	row := db.QueryRow(ctx, subscriptionsTotalCost,
+		arg.UserID,
+		arg.ServiceName,
+		arg.StartDate,
+		arg.EndDate,
 	)
+	var total_cost int64
+	err := row.Scan(&total_cost)
 	if err != nil {
-		return nil, fmt.Errorf("query ListSubscriptionsFiltered: %w", err)
+		err = fmt.Errorf("query SubscriptionsTotalCost: %w", err)
 	}
-	defer rows.Close()
-	var items []*Subscription
-	for rows.Next() {
-		var i Subscription
-		if err := rows.Scan(
-			&i.ID,
-			&i.ServiceName,
-			&i.Price,
-			&i.UserID,
-			&i.StartDate,
-			&i.EndDate,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, fmt.Errorf("query ListSubscriptionsFiltered: %w", err)
-		}
-		items = append(items, &i)
+	return total_cost, err
+}
+
+const totalSubscriptions = `-- name: TotalSubscriptions :one
+SELECT COUNT(*)::int AS total
+FROM subscriptions
+`
+
+func (q *Queries) TotalSubscriptions(ctx context.Context, db DBTX) (int32, error) {
+	row := db.QueryRow(ctx, totalSubscriptions)
+	var total int32
+	err := row.Scan(&total)
+	if err != nil {
+		err = fmt.Errorf("query TotalSubscriptions: %w", err)
 	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("query ListSubscriptionsFiltered: %w", err)
-	}
-	return items, nil
+	return total, err
 }
 
 const updateSubscription = `-- name: UpdateSubscription :one

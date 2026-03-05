@@ -3,10 +3,11 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
-	"github.com/google/uuid"
 	"github.com/Novodremov/subscribe-be/internal/domain"
 	"github.com/Novodremov/subscribe-be/internal/repo"
+	"github.com/google/uuid"
 )
 
 type SubscriptionService struct {
@@ -59,20 +60,24 @@ func (s *SubscriptionService) DeleteSubscription(ctx context.Context, id uuid.UU
 
 func (s *SubscriptionService) ListSubscriptions(ctx context.Context, limit, offset int) ([]domain.Subscription, int, error) {
 	// Здесь могла бы быть ваша бизнес-логика
-	items, total, err := s.repo.List(ctx, limit, offset)
+	subs, err := s.repo.List(ctx, limit, offset)
 	if err != nil {
 		return nil, 0, fmt.Errorf("repo list subscriptions failed: %w", err)
 	}
-	// Здесь могла бы быть ваша бизнес-логика
-	return items, total, nil
-}
-
-func (s *SubscriptionService) ListSubscriptionsFiltered(ctx context.Context, userID *uuid.UUID, serviceName *string, limit, offset int) ([]domain.Subscription, int, error) {
-	// Здесь могла бы быть ваша бизнес-логика
-	items, total, err := s.repo.ListFiltered(ctx, userID, serviceName, limit, offset)
+	total, err := s.repo.TotalCount(ctx)
 	if err != nil {
-		return nil, 0, fmt.Errorf("repo list filtered subscriptions failed: %w", err)
+		return nil, 0, fmt.Errorf("failed to get total count of subscriptions: %w", err)
 	}
 	// Здесь могла бы быть ваша бизнес-логика
-	return items, total, nil
+	return subs, total, nil
+}
+
+func (s *SubscriptionService) SubscriptionsTotalCost(ctx context.Context, userID *uuid.UUID, serviceName *string, startDate, endDate *time.Time) (int64, error) {
+	// Здесь могла бы быть ваша бизнес-логика
+	total, err := s.repo.TotalCost(ctx, userID, serviceName, startDate, endDate)
+	if err != nil {
+		return 0, fmt.Errorf("repo total cost calculation failed: %w", err)
+	}
+	// Здесь могла бы быть ваша бизнес-логика
+	return total, nil
 }

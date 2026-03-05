@@ -70,10 +70,10 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateSubscriptionResponse"
+                            "$ref": "#/definitions/dto.SubscriptionResponse"
                         }
                     },
                     "400": {
@@ -91,12 +91,12 @@ const docTemplate = `{
                 }
             }
         },
-        "/subscription/filter": {
+        "/subscription/total-cost": {
             "get": {
                 "produces": [
                     "application/json"
                 ],
-                "summary": "List of subscriptions with filters",
+                "summary": "Get total cost of subscriptions with filters",
                 "parameters": [
                     {
                         "type": "string",
@@ -111,15 +111,15 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "Limit",
-                        "name": "limit",
+                        "type": "string",
+                        "description": "Start date (YYYY-MM-DD)",
+                        "name": "start_date",
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "Offset",
-                        "name": "offset",
+                        "type": "string",
+                        "description": "End date (YYYY-MM-DD)",
+                        "name": "end_date",
                         "in": "query"
                     }
                 ],
@@ -127,7 +127,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.ListSubscriptionsResponse"
+                            "$ref": "#/definitions/dto.SubscriptionsTotalCostResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/HTTPError"
                         }
                     },
                     "500": {
@@ -163,6 +169,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/HTTPError"
                         }
@@ -214,6 +226,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/HTTPError"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/HTTPError"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -246,6 +264,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/HTTPError"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/HTTPError"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -269,44 +293,29 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "end_date": {
+                    "description": "Optional subscription end date in MM-YYYY format",
                     "type": "string",
                     "example": "12-2026"
                 },
                 "price": {
+                    "description": "Subscription price in rubles",
                     "type": "integer",
                     "example": 599
                 },
                 "service_name": {
+                    "description": "Name of the service to subscribe to",
                     "type": "string",
                     "example": "Netflix"
                 },
                 "start_date": {
+                    "description": "Subscription start date in MM-YYYY format",
                     "type": "string",
                     "example": "01-2026"
                 },
                 "user_id": {
+                    "description": "ID of the user creating the subscription",
                     "type": "string",
                     "example": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
-                }
-            }
-        },
-        "dto.CreateSubscriptionResponse": {
-            "type": "object",
-            "properties": {
-                "end_date": {
-                    "type": "string"
-                },
-                "price": {
-                    "type": "integer"
-                },
-                "service_name": {
-                    "type": "string"
-                },
-                "start_date": {
-                    "type": "string"
-                },
-                "user_id": {
-                    "type": "string"
                 }
             }
         },
@@ -314,12 +323,14 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "subscriptions": {
+                    "description": "List of subscriptions",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/dto.SubscriptionResponse"
                     }
                 },
                 "total_count": {
+                    "description": "Total number of subscriptions\nexample: 42",
                     "type": "integer"
                 }
             }
@@ -328,28 +339,53 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "created_at": {
-                    "type": "string"
+                    "description": "Timestamp when subscription was created",
+                    "type": "string",
+                    "example": "2026-03-05T10:30:35Z"
                 },
                 "end_date": {
-                    "type": "string"
+                    "description": "Optional subscription end month-year in MM-YYYY format",
+                    "type": "string",
+                    "example": "12-2026"
                 },
                 "id": {
-                    "type": "string"
+                    "description": "Unique subscription ID",
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
                 },
                 "price": {
-                    "type": "integer"
+                    "description": "Price in cents",
+                    "type": "integer",
+                    "example": 599
                 },
                 "service_name": {
-                    "type": "string"
+                    "description": "Name of the subscribed service",
+                    "type": "string",
+                    "example": "Netflix"
                 },
                 "start_date": {
-                    "type": "string"
+                    "description": "Subscription start month-year in MM-YYYY format",
+                    "type": "string",
+                    "example": "01-2026"
                 },
                 "updated_at": {
-                    "type": "string"
+                    "description": "Timestamp when subscription was last updated",
+                    "type": "string",
+                    "example": "2026-03-05T10:30:35Z"
                 },
                 "user_id": {
-                    "type": "string"
+                    "description": "ID of the user owning the subscription",
+                    "type": "string",
+                    "example": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+                }
+            }
+        },
+        "dto.SubscriptionsTotalCostResponse": {
+            "type": "object",
+            "properties": {
+                "total_cost": {
+                    "description": "Total cost of subscriptions in rubles\nexample: 504328",
+                    "type": "integer"
                 }
             }
         },
@@ -357,18 +393,22 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "end_date": {
+                    "description": "Updated end date in MM-YYYY format (optional)",
                     "type": "string",
                     "example": "11-2026"
                 },
                 "price": {
+                    "description": "New subscription price in rubles (optional)",
                     "type": "integer",
                     "example": 299
                 },
                 "service_name": {
+                    "description": "New service name (optional)",
                     "type": "string",
                     "example": "Spotify"
                 },
                 "start_date": {
+                    "description": "Updated start date in MM-YYYY format (optional)",
                     "type": "string",
                     "example": "02-2026"
                 }

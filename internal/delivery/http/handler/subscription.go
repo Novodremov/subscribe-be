@@ -1,10 +1,13 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/Novodremov/subscribe-be/internal/dto"
+	"github.com/Novodremov/subscribe-be/internal/repo"
 	"github.com/Novodremov/subscribe-be/internal/service"
 
 	"github.com/gofiber/fiber/v2"
@@ -28,7 +31,7 @@ func NewSubscriptionHandler(svc service.ISubscriptionService, logger zerolog.Log
 // @Accept json
 // @Produce json
 // @Param body body dto.CreateSubscriptionRequest true "Create Subscription"
-// @Success 200 {object} dto.CreateSubscriptionResponse
+// @Success 201 {object} dto.SubscriptionResponse
 // @Failure 400 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /subscription [post]
@@ -49,7 +52,7 @@ func (h *SubscriptionHandler) CreateSubscription(c *fiber.Ctx) error {
 		h.log.Error().Int("price", req.Price).Str("op", op).Msg("invalid price")
 		return NewHTTPError(ErrValidation, http.StatusBadRequest, "price must be > 0")
 	}
-	if req.UserID == "" {
+	if req.UserID == uuid.Nil {
 		h.log.Error().Str("op", op).Msg("user_id is missing")
 		return NewHTTPError(ErrValidation, http.StatusBadRequest, "user_id is required")
 	}
@@ -81,15 +84,15 @@ func (h *SubscriptionHandler) CreateSubscription(c *fiber.Ctx) error {
 		Str("user_id", created.UserID.String()).
 		Msg("subscription successfully created")
 
-	return c.JSON(MapDomainToCreateResponse(*created))
+	return c.Status(http.StatusCreated).JSON(MapDomainToResponse(*created))
 }
-
 
 // @Summary Get subscription
 // @Produce json
 // @Param id path string true "Subscription ID"
 // @Success 200 {object} dto.SubscriptionResponse
 // @Failure 400 {object} HTTPError
+// @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /subscription/{id} [get]
 func (h *SubscriptionHandler) GetSubscription(c *fiber.Ctx) error {
@@ -103,7 +106,12 @@ func (h *SubscriptionHandler) GetSubscription(c *fiber.Ctx) error {
 	}
 
 	sub, err := h.svc.GetSubscription(c.Context(), id)
+
 	if err != nil {
+		if errors.Is(err, repo.ErrSubscriptionNotFound) {
+			h.log.Error().Str("op", op).Str("subscription_id", id.String()).Msg("subscription not found")
+			return NewHTTPError(err, http.StatusNotFound, "subscription not found")
+		}
 		h.log.Error().Err(err).Str("op", op).Msg("failed to get subscription")
 		return NewHTTPError(err, http.StatusInternalServerError, "failed to get subscription")
 	}
@@ -123,6 +131,7 @@ func (h *SubscriptionHandler) GetSubscription(c *fiber.Ctx) error {
 // @Param body body dto.UpdateSubscriptionRequest true "Update Subscription"
 // @Success 200 {object} dto.SubscriptionResponse
 // @Failure 400 {object} HTTPError
+// @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /subscription/{id} [put]
 func (h *SubscriptionHandler) UpdateSubscription(c *fiber.Ctx) error {
@@ -155,10 +164,13 @@ func (h *SubscriptionHandler) UpdateSubscription(c *fiber.Ctx) error {
 	domainSub.ID = id
 	updated, err := h.svc.UpdateSubscription(c.Context(), &domainSub)
 	if err != nil {
+		if errors.Is(err, repo.ErrSubscriptionNotFound) {
+			h.log.Error().Str("op", op).Str("subscription_id", id.String()).Msg("subscription not found")
+			return NewHTTPError(err, http.StatusNotFound, "subscription not found")
+		}
 		h.log.Error().Err(err).Str("op", op).Msg("failed to update subscription")
 		return NewHTTPError(err, http.StatusInternalServerError, "failed to update subscription")
 	}
-
 	h.log.Info().
 		Str("op", op).
 		Str("subscription_id", updated.ID.String()).
@@ -172,6 +184,7 @@ func (h *SubscriptionHandler) UpdateSubscription(c *fiber.Ctx) error {
 // @Param id path string true "Subscription ID"
 // @Success 204
 // @Failure 400 {object} HTTPError
+// @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /subscription/{id} [delete]
 func (h *SubscriptionHandler) DeleteSubscription(c *fiber.Ctx) error {
@@ -185,10 +198,13 @@ func (h *SubscriptionHandler) DeleteSubscription(c *fiber.Ctx) error {
 	}
 
 	if err := h.svc.DeleteSubscription(c.Context(), id); err != nil {
-		h.log.Error().Err(err).Str("op", op).Str("subscription_id", id.String()).Msg("failed to delete subscription")
+		if errors.Is(err, repo.ErrSubscriptionNotFound) {
+			h.log.Error().Str("op", op).Str("subscription_id", id.String()).Msg("subscription not found")
+			return NewHTTPError(err, http.StatusNotFound, "subscription not found")
+		}
+		h.log.Error().Err(err).Str("op", op).Msg("failed to delete subscription")
 		return NewHTTPError(err, http.StatusInternalServerError, "failed to delete subscription")
 	}
-
 	h.log.Info().
 		Str("op", op).
 		Str("subscription_id", id.String()).
@@ -234,17 +250,18 @@ func (h *SubscriptionHandler) ListSubscriptions(c *fiber.Ctx) error {
 	return c.JSON(MapDomainSubscriptionsToDTO(items, total))
 }
 
-// @Summary List of subscriptions with filters
+// @Summary Get total cost of subscriptions with filters
 // @Produce json
 // @Param user_id query string false "User ID"
 // @Param service_name query string false "Service Name"
-// @Param limit query int false "Limit"
-// @Param offset query int false "Offset"
-// @Success 200 {object} dto.ListSubscriptionsResponse
+// @Param start_date query string false "Start date (YYYY-MM-DD)"
+// @Param end_date query string false "End date (YYYY-MM-DD)"
+// @Success 200 {object} dto.SubscriptionsTotalCostResponse
+// @Failure 400 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /subscription/filter [get]
-func (h *SubscriptionHandler) ListSubscriptionsFiltered(c *fiber.Ctx) error {
-	const op = "ListSubscriptionsFiltered"
+// @Router /subscription/total-cost [get]
+func (h *SubscriptionHandler) SubscriptionsTotalCost(c *fiber.Ctx) error {
+	const op = "SubscriptionsTotalCost"
 
 	var userID *uuid.UUID
 	if s := c.Query("user_id"); s != "" {
@@ -265,16 +282,33 @@ func (h *SubscriptionHandler) ListSubscriptionsFiltered(c *fiber.Ctx) error {
 		serviceName = &s
 	}
 
-	limit, offset, err := parseLimitOffset(c)
-	if err != nil {
-		h.log.Error().
-			Err(err).
-			Str("op", op).
-			Msg("invalid pagination parameters")
-		return NewHTTPError(err, http.StatusBadRequest, "invalid pagination parameters")
+	var startDate *time.Time
+	if s := c.Query("start_date"); s != "" {
+		parsed, err := time.Parse(DateLayout, s)
+		if err != nil {
+			return NewHTTPError(err, http.StatusBadRequest, "invalid start_date format, expected YYYY-MM-DD")
+		}
+		startDate = &parsed
 	}
 
-	items, total, err := h.svc.ListSubscriptionsFiltered(c.Context(), userID, serviceName, limit, offset)
+	var endDate *time.Time
+	if s := c.Query("end_date"); s != "" {
+		parsed, err := time.Parse(DateLayout, s)
+		if err != nil {
+			return NewHTTPError(err, http.StatusBadRequest, "invalid end_date format, expected YYYY-MM-DD")
+		}
+		endDate = &parsed
+	}
+
+	if startDate != nil && endDate != nil && startDate.After(*endDate) {
+		return NewHTTPError(
+			fmt.Errorf("start_date after end_date"),
+			http.StatusBadRequest,
+			"start_date cannot be later than end_date",
+		)
+	}
+
+	total, err := h.svc.SubscriptionsTotalCost(c.Context(), userID, serviceName, startDate, endDate)
 	if err != nil {
 		h.log.Error().
 			Err(err).
@@ -284,12 +318,13 @@ func (h *SubscriptionHandler) ListSubscriptionsFiltered(c *fiber.Ctx) error {
 	}
 
 	h.log.Info().
-		Int("count", len(items)).
-		Int("total_count", total).
+		Int64("total_cost", total).
 		Str("op", op).
-		Msg("filtered subscriptions listed successfully")
+		Msg("total cost of filtered subscriptions calculated successfully")
 
-	return c.JSON(MapDomainSubscriptionsToDTO(items, total))
+	return c.JSON(dto.SubscriptionsTotalCostResponse{
+		TotalCost: total,
+	})
 }
 
 func parseLimitOffset(c *fiber.Ctx) (int, int, error) {

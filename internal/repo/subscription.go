@@ -2,12 +2,15 @@ package repo
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	sqlc "github.com/Novodremov/subscribe-be/internal/db/sqlc_generated"
 	"github.com/Novodremov/subscribe-be/internal/domain"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -25,21 +28,12 @@ func NewSubscriptionRepo(pool *pgxpool.Pool) ISubscriptionRepo {
 }
 
 func (r *subscriptionRepo) Create(ctx context.Context, in *domain.CreateSubscription) (*domain.Subscription, error) {
-	var pgEndDate pgtype.Date
-	if in.EndDate != nil {
-		pgEndDate = pgtype.Date{
-			Time:  *in.EndDate,
-			Valid: true,
-		}
-	} else {
-		pgEndDate = pgtype.Date{Valid: false}
-	}
 	params := sqlc.CreateSubscriptionParams{
 		ServiceName: in.ServiceName,
 		Price:       int32(in.Price),
 		UserID:      uuidToPgtype(in.UserID),
-		StartDate:   timeToPGDate(in.StartDate),
-		EndDate:     pgEndDate,
+		StartDate:   timePtrToPGDate(&in.StartDate),
+		EndDate:     timePtrToPGDate(in.EndDate),
 	}
 
 	sub, err := r.q.CreateSubscription(ctx, r.conn, params)
@@ -53,6 +47,9 @@ func (r *subscriptionRepo) Create(ctx context.Context, in *domain.CreateSubscrip
 func (r *subscriptionRepo) Get(ctx context.Context, id uuid.UUID) (*domain.Subscription, error) {
 	sub, err := r.q.GetSubscription(ctx, r.conn, uuidToPgtype(id))
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrSubscriptionNotFound
+		}
 		return nil, fmt.Errorf("failed to get subscription: %w", err)
 	}
 	return mapSQLCToDomain(sub)
@@ -63,17 +60,15 @@ func (r *subscriptionRepo) Update(ctx context.Context, in *domain.UpdateSubscrip
 		ID:          uuidToPgtype(in.ID),
 		ServiceName: derefString(in.ServiceName),
 		Price:       int32(derefInt(in.Price)),
-	}
-
-	if in.StartDate != nil {
-		params.StartDate = timeToPGDate(*in.StartDate)
-	}
-	if in.EndDate != nil {
-		params.EndDate = timeToPGDate(*in.EndDate)
+		StartDate:   timePtrToPGDate(in.StartDate),
+		EndDate:     timePtrToPGDate(in.EndDate),
 	}
 
 	sub, err := r.q.UpdateSubscription(ctx, r.conn, params)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrSubscriptionNotFound
+		}
 		return nil, fmt.Errorf("failed to update subscription: %w", err)
 	}
 
@@ -82,13 +77,18 @@ func (r *subscriptionRepo) Update(ctx context.Context, in *domain.UpdateSubscrip
 
 func (r *subscriptionRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	pgID := uuidToPgtype(id)
-	if err := r.q.DeleteSubscription(ctx, r.conn, pgID); err != nil {
+
+	rows, err := r.q.DeleteSubscription(ctx, r.conn, pgID)
+	if err != nil {
 		return fmt.Errorf("failed to delete subscription: %w", err)
 	}
+	if rows == 0 {
+			return ErrSubscriptionNotFound
+		}
 	return nil
 }
 
-func (r *subscriptionRepo) List(ctx context.Context, limit, offset int) ([]domain.Subscription, int, error) {
+func (r *subscriptionRepo) List(ctx context.Context, limit, offset int) ([]domain.Subscription, error) {
 	params := sqlc.ListSubscriptionsParams{
 		Limit:  int32(limit),
 		Offset: int32(offset),
@@ -96,22 +96,30 @@ func (r *subscriptionRepo) List(ctx context.Context, limit, offset int) ([]domai
 
 	subs, err := r.q.ListSubscriptions(ctx, r.conn, params)
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to list subscriptions: %w", err)
+		return nil, fmt.Errorf("failed to list subscriptions: %w", err)
 	}
 
 	domainSubs := make([]domain.Subscription, 0, len(subs))
 	for _, s := range subs {
 		ds, err := mapSQLCToDomain(s)
 		if err != nil {
-			return nil, 0, fmt.Errorf("failed to map subscription: %w", err)
+			return nil, fmt.Errorf("failed to map subscription: %w", err)
 		}
 		domainSubs = append(domainSubs, *ds)
 	}
 
-	return domainSubs, len(domainSubs), nil
+	return domainSubs, nil
 }
 
-func (r *subscriptionRepo) ListFiltered(ctx context.Context, userID *uuid.UUID, serviceName *string, limit, offset int) ([]domain.Subscription, int, error) {
+func (r *subscriptionRepo) TotalCount(ctx context.Context) (int, error) {
+	total, err := r.q.TotalSubscriptions(ctx, r.conn)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get total number of subscriptions: %w", err)
+	}
+	return int(total), nil
+}
+
+func (r *subscriptionRepo) TotalCost(ctx context.Context, userID *uuid.UUID, serviceName *string, startDate, endDate *time.Time) (int64, error) {
 	var pgID pgtype.UUID
 	if userID != nil {
 		pgID = uuidToPgtype(*userID)
@@ -119,31 +127,17 @@ func (r *subscriptionRepo) ListFiltered(ctx context.Context, userID *uuid.UUID, 
 		pgID = pgtype.UUID{Valid: false}
 	}
 
-	svc := ""
-	if serviceName != nil {
-		svc = *serviceName
+	params := sqlc.SubscriptionsTotalCostParams{
+		UserID:      pgID,
+		ServiceName: serviceName,
+		StartDate:   timePtrToPGDate(startDate),
+		EndDate:     timePtrToPGDate(endDate),
 	}
 
-	params := sqlc.ListSubscriptionsFilteredParams{
-		Column1: pgID,
-		Column2: svc,
-		Limit:   int32(limit),
-		Offset:  int32(offset),
-	}
-
-	subs, err := r.q.ListSubscriptionsFiltered(ctx, r.conn, params)
+	total, err := r.q.SubscriptionsTotalCost(ctx, r.conn, params)
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to list filtered subscriptions: %w", err)
+		return 0, fmt.Errorf("failed to calculate total cost of subscriptions: %w", err)
 	}
 
-	domainSubs := make([]domain.Subscription, 0, len(subs))
-	for _, s := range subs {
-		ds, err := mapSQLCToDomain(s)
-		if err != nil {
-			return nil, 0, fmt.Errorf("failed to map subscription: %w", err)
-		}
-		domainSubs = append(domainSubs, *ds)
-	}
-
-	return domainSubs, len(domainSubs), nil
+	return total, nil
 }

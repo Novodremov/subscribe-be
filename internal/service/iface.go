@@ -2,9 +2,10 @@ package service
 
 import (
 	"context"
+	"time"
 
-	"github.com/google/uuid"
 	"github.com/Novodremov/subscribe-be/internal/domain"
+	"github.com/google/uuid"
 )
 
 type ISubscriptionService interface {
@@ -13,5 +14,5 @@ type ISubscriptionService interface {
 	UpdateSubscription(ctx context.Context, in *domain.UpdateSubscription) (*domain.Subscription, error)
 	DeleteSubscription(ctx context.Context, id uuid.UUID) error
 	ListSubscriptions(ctx context.Context, limit, offset int) ([]domain.Subscription, int, error)
-	ListSubscriptionsFiltered(ctx context.Context, userID *uuid.UUID, serviceName *string, limit, offset int) ([]domain.Subscription, int, error)
+	SubscriptionsTotalCost(ctx context.Context, userID *uuid.UUID, serviceName *string, startDate, endDate *time.Time) (int64, error)
 }

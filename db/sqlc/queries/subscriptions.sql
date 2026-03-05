@@ -19,7 +19,7 @@ SET
 WHERE id = $1
 RETURNING id, service_name, price, user_id, start_date, end_date, created_at, updated_at;
 
--- name: DeleteSubscription :exec
+-- name: DeleteSubscription :execrows
 DELETE FROM subscriptions
 WHERE id = $1;
 
@@ -29,11 +29,15 @@ FROM subscriptions
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2;
 
--- name: ListSubscriptionsFiltered :many
-SELECT *
+-- name: TotalSubscriptions :one
+SELECT COUNT(*)::int AS total
+FROM subscriptions;
+
+-- name: SubscriptionsTotalCost :one
+SELECT COALESCE(SUM(price), 0)::bigint AS total_cost
 FROM subscriptions
 WHERE
-    ($1::uuid IS NULL OR user_id = $1)
-    AND ($2::text IS NULL OR service_name = $2)
-ORDER BY created_at DESC
-LIMIT $3 OFFSET $4;
+    (sqlc.narg(user_id)::uuid IS NULL OR user_id = sqlc.narg(user_id))
+AND (sqlc.narg(service_name)::text IS NULL OR service_name = sqlc.narg(service_name))
+AND (sqlc.narg(start_date)::date IS NULL OR start_date >= sqlc.narg(start_date))
+AND (sqlc.narg(end_date)::date IS NULL OR (end_date IS NOT NULL AND end_date <= sqlc.narg(end_date)));

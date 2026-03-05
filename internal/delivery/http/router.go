@@ -65,7 +65,7 @@ func errorHandler(c *fiber.Ctx, err error) error {
 
 func initSubscriptionRoutes(r fiber.Router, sh *handler.SubscriptionHandler, prefix string) fiber.Router {
 	subs := r.Group(prefix)
-	subs.Get("/filter", sh.ListSubscriptionsFiltered)
+	subs.Get("/total-cost", sh.SubscriptionsTotalCost)
 	subs.Post("/", sh.CreateSubscription)
 	subs.Get("/:id", sh.GetSubscription)
 	subs.Put("/:id", sh.UpdateSubscription)

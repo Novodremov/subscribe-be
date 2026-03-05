@@ -8,74 +8,98 @@ definitions:
   dto.CreateSubscriptionRequest:
     properties:
       end_date:
+        description: Optional subscription end date in MM-YYYY format
         example: 12-2026
         type: string
       price:
+        description: Subscription price in rubles
         example: 599
         type: integer
       service_name:
+        description: Name of the service to subscribe to
         example: Netflix
         type: string
       start_date:
+        description: Subscription start date in MM-YYYY format
         example: 01-2026
         type: string
       user_id:
+        description: ID of the user creating the subscription
         example: bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb
-        type: string
-    type: object
-  dto.CreateSubscriptionResponse:
-    properties:
-      end_date:
-        type: string
-      price:
-        type: integer
-      service_name:
-        type: string
-      start_date:
-        type: string
-      user_id:
         type: string
     type: object
   dto.ListSubscriptionsResponse:
     properties:
       subscriptions:
+        description: List of subscriptions
         items:
           $ref: '#/definitions/dto.SubscriptionResponse'
         type: array
       total_count:
+        description: |-
+          Total number of subscriptions
+          example: 42
         type: integer
     type: object
   dto.SubscriptionResponse:
     properties:
       created_at:
+        description: Timestamp when subscription was created
+        example: "2026-03-05T10:30:35Z"
         type: string
       end_date:
+        description: Optional subscription end month-year in MM-YYYY format
+        example: 12-2026
         type: string
       id:
+        description: Unique subscription ID
+        example: 550e8400-e29b-41d4-a716-446655440000
         type: string
       price:
+        description: Price in cents
+        example: 599
         type: integer
       service_name:
+        description: Name of the subscribed service
+        example: Netflix
         type: string
       start_date:
+        description: Subscription start month-year in MM-YYYY format
+        example: 01-2026
         type: string
       updated_at:
+        description: Timestamp when subscription was last updated
+        example: "2026-03-05T10:30:35Z"
         type: string
       user_id:
+        description: ID of the user owning the subscription
+        example: bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb
         type: string
+    type: object
+  dto.SubscriptionsTotalCostResponse:
+    properties:
+      total_cost:
+        description: |-
+          Total cost of subscriptions in rubles
+          example: 504328
+        type: integer
     type: object
   dto.UpdateSubscriptionRequest:
     properties:
       end_date:
+        description: Updated end date in MM-YYYY format (optional)
         example: 11-2026
         type: string
       price:
+        description: New subscription price in rubles (optional)
         example: 299
         type: integer
       service_name:
+        description: New service name (optional)
         example: Spotify
         type: string
       start_date:
+        description: Updated start date in MM-YYYY format (optional)
         example: 02-2026
         type: string
     type: object
@@ -122,10 +146,10 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
-            $ref: '#/definitions/dto.CreateSubscriptionResponse'
+            $ref: '#/definitions/dto.SubscriptionResponse'
         "400":
           description: Bad Request
           schema:
@@ -152,6 +176,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/HTTPError'
         "500":
           description: Internal Server Error
           schema:
@@ -173,6 +201,10 @@ paths:
             $ref: '#/definitions/dto.SubscriptionResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/HTTPError'
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/HTTPError'
         "500":
@@ -206,12 +238,16 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/HTTPError'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/HTTPError'
       summary: Update subscription
-  /subscription/filter:
+  /subscription/total-cost:
     get:
       parameters:
       - description: User ID
@@ -222,24 +258,28 @@ paths:
         in: query
         name: service_name
         type: string
-      - description: Limit
+      - description: Start date (YYYY-MM-DD)
         in: query
-        name: limit
-        type: integer
-      - description: Offset
+        name: start_date
+        type: string
+      - description: End date (YYYY-MM-DD)
         in: query
-        name: offset
-        type: integer
+        name: end_date
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.ListSubscriptionsResponse'
+            $ref: '#/definitions/dto.SubscriptionsTotalCostResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/HTTPError'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/HTTPError'
-      summary: List of subscriptions with filters
+      summary: Get total cost of subscriptions with filters
 swagger: "2.0"
