@@ -330,8 +330,9 @@ const docTemplate = `{
                     }
                 },
                 "total_count": {
-                    "description": "Total number of subscriptions\nexample: 42",
-                    "type": "integer"
+                    "description": "Total number of subscriptions",
+                    "type": "integer",
+                    "example": 42
                 }
             }
         },
@@ -384,8 +385,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "total_cost": {
-                    "description": "Total cost of subscriptions in rubles\nexample: 504328",
-                    "type": "integer"
+                    "description": "Total cost of subscriptions in rubles",
+                    "type": "integer",
+                    "example": 504328
                 }
             }
         },

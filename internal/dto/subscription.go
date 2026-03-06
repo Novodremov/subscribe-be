@@ -57,14 +57,12 @@ type ListSubscriptionsResponse struct {
 	// List of subscriptions
 	Subscriptions []SubscriptionResponse `json:"subscriptions"`
 	// Total number of subscriptions
-	// example: 42
-	TotalCount int `json:"total_count"`
+	TotalCount int `json:"total_count" example:"42"`
 }
 
 // SubscriptionsTotalCostResponse represents aggregated subscription cost
 // swagger:model SubscriptionsTotalCostResponse
 type SubscriptionsTotalCostResponse struct {
 	// Total cost of subscriptions in rubles
-	// example: 504328
-	TotalCost int64 `json:"total_cost"`
+	TotalCost int64 `json:"total_cost" example:"504328"`
 }

@@ -36,9 +36,8 @@ definitions:
           $ref: '#/definitions/dto.SubscriptionResponse'
         type: array
       total_count:
-        description: |-
-          Total number of subscriptions
-          example: 42
+        description: Total number of subscriptions
+        example: 42
         type: integer
     type: object
   dto.SubscriptionResponse:
@@ -79,9 +78,8 @@ definitions:
   dto.SubscriptionsTotalCostResponse:
     properties:
       total_cost:
-        description: |-
-          Total cost of subscriptions in rubles
-          example: 504328
+        description: Total cost of subscriptions in rubles
+        example: 504328
         type: integer
     type: object
   dto.UpdateSubscriptionRequest:
