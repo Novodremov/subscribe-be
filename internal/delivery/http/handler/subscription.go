@@ -162,6 +162,16 @@ func (h *SubscriptionHandler) UpdateSubscription(c *fiber.Ctx) error {
 	}
 
 	domainSub.ID = id
+
+	if domainSub.StartDate != nil && domainSub.EndDate != nil && domainSub.EndDate.Before(*domainSub.StartDate) {
+		h.log.Error().
+			Time("start_date", *domainSub.StartDate).
+			Time("end_date", *domainSub.EndDate).
+			Str("op", op).
+			Msg("end_date cannot be before start_date")
+		return NewHTTPError(ErrValidation, http.StatusBadRequest, "end_date cannot be before start_date")
+	}
+	
 	updated, err := h.svc.UpdateSubscription(c.Context(), &domainSub)
 	if err != nil {
 		if errors.Is(err, repo.ErrSubscriptionNotFound) {
