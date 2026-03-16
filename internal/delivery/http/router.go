@@ -15,6 +15,8 @@ const (
 	apiPrefix = "/api/v1"
 )
 
+// NewRouter создаёт новый fiber-роутер.
+// 
 // @title           Subscribe API
 // @version         1.0
 // @description     Сервис для работы с подписками.

@@ -9,6 +9,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// NewMigrator создает новый экземпляр Migrator с подключением к БД и конфигурацией.
+// Используется для запуска миграций базы данных.
 func NewMigrator(db *pgxpool.Pool, cfg *config.Config) *Migrator {
 	return &Migrator{
 		db:  db,
@@ -21,6 +23,8 @@ type Migrator struct {
 	cfg *config.Config
 }
 
+// Run выполняет миграции базы данных, используя конфигурацию Migrator.
+// Логирует начало процесса и возможные ошибки при применении миграций.
 func (m *Migrator) Run() error {
 	log.Info().Msg("starting database migrations")
 	if err := goose.SetDialect(string(goose.DialectPostgres)); err != nil {

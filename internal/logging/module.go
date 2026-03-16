@@ -17,6 +17,7 @@ var Module = fx.Module(
 	),
 )
 
+// NewLogger создаёт новый экземпляр логгера.
 func NewLogger(cfg *config.Config) zerolog.Logger {
 	level := zerolog.InfoLevel
 	switch cfg.App.LogLevel {

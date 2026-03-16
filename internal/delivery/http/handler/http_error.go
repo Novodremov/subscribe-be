@@ -22,6 +22,7 @@ func (e *HTTPError) Unwrap() error {
 	return e.Err
 }
 
+// NewHTTPError создаёт новый экземпляр кастомной ошибки HTTPError.
 func NewHTTPError(err error, code int, msg ...string) *HTTPError {
 	msgs := strings.Join(msg, ", ")
 	return &HTTPError{Err: err, Code: code, Message: msgs}

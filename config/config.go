@@ -50,6 +50,7 @@ func (c Config) IsNil() bool {
 	return reflect.DeepEqual(c, Config{})
 }
 
+// SetLogLevel устанавливает уровень логирования.
 func (c Config) SetLogLevel() {
 	switch c.App.LogLevel {
 	case "disabled":
@@ -71,6 +72,8 @@ func (c Config) SetLogLevel() {
 	}
 }
 
+// New читает конфигурацию приложения из файла .env или переменных окружения.
+// Возвращает готовый Config с установленным уровнем логирования или ошибку.
 func New() (*Config, error) {
 	cfg := new(Config)
 

@@ -20,6 +20,8 @@ type SubscriptionHandler struct {
 	log zerolog.Logger
 }
 
+// NewSubscriptionHandler создает новый экземпляр SubscriptionHandler с переданным сервисом подписок и логгером.
+// Используется для инициализации хендлеров HTTP маршрутов.
 func NewSubscriptionHandler(svc service.ISubscriptionService, logger zerolog.Logger) *SubscriptionHandler {
 	return &SubscriptionHandler{
 		svc: svc,
@@ -27,6 +29,8 @@ func NewSubscriptionHandler(svc service.ISubscriptionService, logger zerolog.Log
 	}
 }
 
+// CreateSubscription создаёт новую подписку.
+//
 // @Summary Create subscription
 // @Accept json
 // @Produce json
@@ -87,6 +91,8 @@ func (h *SubscriptionHandler) CreateSubscription(c *fiber.Ctx) error {
 	return c.Status(http.StatusCreated).JSON(MapDomainToResponse(*created))
 }
 
+// GetSubscription извлекает подписку по ID.
+//
 // @Summary Get subscription
 // @Produce json
 // @Param id path string true "Subscription ID"
@@ -124,6 +130,8 @@ func (h *SubscriptionHandler) GetSubscription(c *fiber.Ctx) error {
 	return c.JSON(MapDomainToResponse(*sub))
 }
 
+// UpdateSubscription обновляет данные по подписке.
+//
 // @Summary Update subscription
 // @Accept json
 // @Produce json
@@ -189,6 +197,8 @@ func (h *SubscriptionHandler) UpdateSubscription(c *fiber.Ctx) error {
 	return c.JSON(MapDomainToResponse(*updated))
 }
 
+// DeleteSubscription удаляет подписку по ID.
+//
 // @Summary Delete subscription
 // @Produce json
 // @Param id path string true "Subscription ID"
@@ -223,6 +233,8 @@ func (h *SubscriptionHandler) DeleteSubscription(c *fiber.Ctx) error {
 	return c.SendStatus(http.StatusNoContent)
 }
 
+// ListSubscriptions возвращает список подписок с учётом пагинации (лимит, офсет) и их общее количество.
+//
 // @Summary List of subscriptions
 // @Produce json
 // @Param limit query int false "Limit"
@@ -260,6 +272,9 @@ func (h *SubscriptionHandler) ListSubscriptions(c *fiber.Ctx) error {
 	return c.JSON(MapDomainSubscriptionsToDTO(items, total))
 }
 
+// SubscriptionsTotalCost вычисляет суммарную стоимость подписок для указанного пользователя и/или сервиса за заданный период.
+// Параметры startDate и endDate могут быть nil, тогда период не учитывается.
+//
 // @Summary Get total cost of subscriptions with filters
 // @Produce json
 // @Param user_id query string false "User ID"

@@ -20,6 +20,7 @@ type subscriptionRepo struct {
 	conn sqlc.DBTX
 }
 
+// NewSubscriptionRepo создает новый экземпляр репозитория с подключением к БД.
 func NewSubscriptionRepo(pool *pgxpool.Pool) ISubscriptionRepo {
 	return &subscriptionRepo{
 		q:    sqlc.New(),
@@ -27,6 +28,7 @@ func NewSubscriptionRepo(pool *pgxpool.Pool) ISubscriptionRepo {
 	}
 }
 
+// Create сохраняет новую подписку в базе данных и возвращает созданную запись.
 func (r *subscriptionRepo) Create(ctx context.Context, in *domain.CreateSubscription) (*domain.Subscription, error) {
 	params := sqlc.CreateSubscriptionParams{
 		ServiceName: in.ServiceName,
@@ -44,6 +46,7 @@ func (r *subscriptionRepo) Create(ctx context.Context, in *domain.CreateSubscrip
 	return mapSQLCToDomain(sub)
 }
 
+// Get возвращает подписку по ID или ошибку, если запись не найдена.
 func (r *subscriptionRepo) Get(ctx context.Context, id uuid.UUID) (*domain.Subscription, error) {
 	sub, err := r.q.GetSubscription(ctx, r.conn, uuidToPgtype(id))
 	if err != nil {
@@ -55,6 +58,7 @@ func (r *subscriptionRepo) Get(ctx context.Context, id uuid.UUID) (*domain.Subsc
 	return mapSQLCToDomain(sub)
 }
 
+// Update обновляет существующую подписку и возвращает обновленную запись.
 func (r *subscriptionRepo) Update(ctx context.Context, in *domain.UpdateSubscription) (*domain.Subscription, error) {
 	params := sqlc.UpdateSubscriptionParams{
 		ID:          uuidToPgtype(in.ID),
@@ -75,6 +79,7 @@ func (r *subscriptionRepo) Update(ctx context.Context, in *domain.UpdateSubscrip
 	return mapSQLCToDomain(sub)
 }
 
+// Delete удаляет подписку по ID.
 func (r *subscriptionRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	pgID := uuidToPgtype(id)
 
@@ -88,6 +93,7 @@ func (r *subscriptionRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
+// List возвращает список подписок с учетом лимита и офсета (пагинация).
 func (r *subscriptionRepo) List(ctx context.Context, limit, offset int) ([]domain.Subscription, error) {
 	params := sqlc.ListSubscriptionsParams{
 		Limit:  int32(limit),
@@ -111,6 +117,7 @@ func (r *subscriptionRepo) List(ctx context.Context, limit, offset int) ([]domai
 	return domainSubs, nil
 }
 
+// TotalCount возвращает общее количество подписок в базе данных.
 func (r *subscriptionRepo) TotalCount(ctx context.Context) (int, error) {
 	total, err := r.q.TotalSubscriptions(ctx, r.conn)
 	if err != nil {
@@ -119,6 +126,7 @@ func (r *subscriptionRepo) TotalCount(ctx context.Context) (int, error) {
 	return int(total), nil
 }
 
+// TotalCost вычисляет суммарную стоимость подписок с учетом фильтров по пользователю, сервису и периоду.
 func (r *subscriptionRepo) TotalCost(ctx context.Context, userID *uuid.UUID, serviceName *string, startDate, endDate *time.Time) (int64, error) {
 	var pgID pgtype.UUID
 	if userID != nil {

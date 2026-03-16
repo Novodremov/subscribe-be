@@ -11,6 +11,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// New инициализирует подключение к Postgres, создает пул соединений и регистрирует жизненный цикл с fx.Lifecycle для старта и остановки.
+// Возвращает готовый пул или ошибку при инициализации.
 func New(lc fx.Lifecycle, cfg *config.Config) (*pgxpool.Pool, error) {
 	poolConfig, err := pgxpool.ParseConfig(cfg.Database.DSN())
 	if err != nil {

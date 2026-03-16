@@ -7,6 +7,7 @@ import (
 	"github.com/Novodremov/subscribe-be/internal/dto"
 )
 
+// MapCreateDTOToCreateDomain преобразует dto.CreateSubscriptionRequest в domain.CreateSubscription.
 func MapCreateDTOToCreateDomain(in dto.CreateSubscriptionRequest) (domain.CreateSubscription, error) {
 	startDate, err := time.Parse(DateShortLayout, in.StartDate)
 	if err != nil {
@@ -31,6 +32,7 @@ func MapCreateDTOToCreateDomain(in dto.CreateSubscriptionRequest) (domain.Create
 	}, nil
 }
 
+// MapCreateDTOToCreateDomain преобразует dto.UpdateSubscriptionRequest в domain.UpdateSubscription.
 func MapUpdateDTOToUpdateDomain(in dto.UpdateSubscriptionRequest) (domain.UpdateSubscription, error) {
 	var startDate, endDate *time.Time
 
@@ -58,6 +60,7 @@ func MapUpdateDTOToUpdateDomain(in dto.UpdateSubscriptionRequest) (domain.Update
 	}, nil
 }
 
+// MapDomainToResponse преобразует domain.Subscription в dto.SubscriptionResponse.
 func MapDomainToResponse(sub domain.Subscription) dto.SubscriptionResponse {
 	var endDate *string
 	if sub.EndDate != nil {
@@ -77,6 +80,7 @@ func MapDomainToResponse(sub domain.Subscription) dto.SubscriptionResponse {
 	}
 }
 
+// MapDomainToResponse преобразует []domain.Subscription в dto.ListSubscriptionsResponse.
 func MapDomainSubscriptionsToDTO(subs []domain.Subscription, totalCount int) dto.ListSubscriptionsResponse {
 	res := make([]dto.SubscriptionResponse, 0, len(subs))
 

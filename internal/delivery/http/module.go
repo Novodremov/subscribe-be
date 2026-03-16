@@ -22,6 +22,7 @@ var Module = fx.Module(
 	),
 )
 
+// RunServer запускает HTTP-сервер Fiber с управлением жизненным циклом через fx.Lifecycle.
 func RunServer(lc fx.Lifecycle, app *fiber.App, cfg *config.Config) {
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
