@@ -264,8 +264,8 @@ func (h *SubscriptionHandler) ListSubscriptions(c *fiber.Ctx) error {
 // @Produce json
 // @Param user_id query string false "User ID"
 // @Param service_name query string false "Service Name"
-// @Param start_date query string false "Start date (YYYY-MM-DD)"
-// @Param end_date query string false "End date (YYYY-MM-DD)"
+// @Param start_date query string false "Start date (DD-MM-YYYY)"
+// @Param end_date query string false "End date (DD-MM-YYYY)"
 // @Success 200 {object} dto.SubscriptionsTotalCostResponse
 // @Failure 400 {object} HTTPError
 // @Failure 500 {object} HTTPError
@@ -296,7 +296,7 @@ func (h *SubscriptionHandler) SubscriptionsTotalCost(c *fiber.Ctx) error {
 	if s := c.Query("start_date"); s != "" {
 		parsed, err := time.Parse(DateLayout, s)
 		if err != nil {
-			return NewHTTPError(err, http.StatusBadRequest, "invalid start_date format, expected YYYY-MM-DD")
+			return NewHTTPError(err, http.StatusBadRequest, "invalid start_date format, expected DD-MM-YYYY")
 		}
 		startDate = &parsed
 	}
@@ -305,7 +305,7 @@ func (h *SubscriptionHandler) SubscriptionsTotalCost(c *fiber.Ctx) error {
 	if s := c.Query("end_date"); s != "" {
 		parsed, err := time.Parse(DateLayout, s)
 		if err != nil {
-			return NewHTTPError(err, http.StatusBadRequest, "invalid end_date format, expected YYYY-MM-DD")
+			return NewHTTPError(err, http.StatusBadRequest, "invalid end_date format, expected DD-MM-YYYY")
 		}
 		endDate = &parsed
 	}

@@ -34,10 +34,40 @@ SELECT COUNT(*)::int AS total
 FROM subscriptions;
 
 -- name: SubscriptionsTotalCost :one
-SELECT COALESCE(SUM(price), 0)::bigint AS total_cost
-FROM subscriptions
-WHERE
-    (sqlc.narg(user_id)::uuid IS NULL OR user_id = sqlc.narg(user_id))
-AND (sqlc.narg(service_name)::text IS NULL OR service_name = sqlc.narg(service_name))
-AND (sqlc.narg(start_date)::date IS NULL OR start_date >= sqlc.narg(start_date))
-AND (sqlc.narg(end_date)::date IS NULL OR (end_date IS NOT NULL AND end_date <= sqlc.narg(end_date)));
+SELECT COALESCE(SUM(
+    price * 
+    CASE 
+        WHEN effective_end < effective_start THEN 0
+        ELSE (
+            (EXTRACT(YEAR FROM effective_end) - EXTRACT(YEAR FROM effective_start)) * 12 +
+            (EXTRACT(MONTH FROM effective_end) - EXTRACT(MONTH FROM effective_start)) +
+            1
+        )
+    END
+), 0)::bigint AS total_cost
+FROM (
+    SELECT 
+        price,
+        -- Логика старта: если фильтр задан, берем максимум, иначе старт подписки
+        CASE 
+            WHEN sqlc.narg(start_date)::date IS NOT NULL 
+                THEN GREATEST(start_date, sqlc.narg(start_date)::date)
+            ELSE start_date
+        END AS effective_start,
+
+        -- Логика конца:
+        -- 1. Определяем реальный конец подписки (если NULL, то считаем до сегодня или бесконечно?)
+        -- 2. Определяем границу фильтра (если NULL, то берем реальный конец подписки)
+        LEAST(
+            COALESCE(end_date, CURRENT_DATE), -- Конец подписки (или сегодня)
+            COALESCE(sqlc.narg(end_date)::date, COALESCE(end_date, CURRENT_DATE)) -- Конец фильтра (или конец подписки/сегодня)
+        ) AS effective_end
+
+    FROM subscriptions
+    WHERE 
+        (sqlc.narg(user_id)::uuid IS NULL OR user_id = sqlc.narg(user_id))
+        AND (sqlc.narg(service_name)::text IS NULL OR service_name = sqlc.narg(service_name))
+        -- Фильтры работают только если переданы соответствующие даты
+        AND (sqlc.narg(end_date)::date IS NULL OR start_date <= sqlc.narg(end_date)::date)
+        AND (sqlc.narg(start_date)::date IS NULL OR end_date IS NULL OR end_date >= sqlc.narg(start_date)::date)
+) AS calculated_periods;

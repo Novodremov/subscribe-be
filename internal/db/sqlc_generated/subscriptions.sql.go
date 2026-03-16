@@ -131,28 +131,58 @@ func (q *Queries) ListSubscriptions(ctx context.Context, db DBTX, arg ListSubscr
 }
 
 const subscriptionsTotalCost = `-- name: SubscriptionsTotalCost :one
-SELECT COALESCE(SUM(price), 0)::bigint AS total_cost
-FROM subscriptions
-WHERE
-    ($1::uuid IS NULL OR user_id = $1)
-AND ($2::text IS NULL OR service_name = $2)
-AND ($3::date IS NULL OR start_date >= $3)
-AND ($4::date IS NULL OR (end_date IS NOT NULL AND end_date <= $4))
+SELECT COALESCE(SUM(
+    price * 
+    CASE 
+        WHEN effective_end < effective_start THEN 0
+        ELSE (
+            (EXTRACT(YEAR FROM effective_end) - EXTRACT(YEAR FROM effective_start)) * 12 +
+            (EXTRACT(MONTH FROM effective_end) - EXTRACT(MONTH FROM effective_start)) +
+            1
+        )
+    END
+), 0)::bigint AS total_cost
+FROM (
+    SELECT 
+        price,
+        -- Логика старта: если фильтр задан, берем максимум, иначе старт подписки
+        CASE 
+            WHEN $1::date IS NOT NULL 
+                THEN GREATEST(start_date, $1::date)
+            ELSE start_date
+        END AS effective_start,
+
+        -- Логика конца:
+        -- 1. Определяем реальный конец подписки (если NULL, то считаем до сегодня или бесконечно?)
+        -- 2. Определяем границу фильтра (если NULL, то берем реальный конец подписки)
+        LEAST(
+            COALESCE(end_date, CURRENT_DATE), -- Конец подписки (или сегодня)
+            COALESCE($2::date, COALESCE(end_date, CURRENT_DATE)) -- Конец фильтра (или конец подписки/сегодня)
+        ) AS effective_end
+
+    FROM subscriptions
+    WHERE 
+        ($3::uuid IS NULL OR user_id = $3)
+        AND ($4::text IS NULL OR service_name = $4)
+        -- Фильтры работают только если переданы соответствующие даты
+        AND ($2::date IS NULL OR start_date <= $2::date)
+        AND ($1::date IS NULL OR end_date IS NULL OR end_date >= $1::date)
+) AS calculated_periods
 `
 
 type SubscriptionsTotalCostParams struct {
-	UserID      pgtype.UUID `db:"user_id"`
-	ServiceName *string     `db:"service_name"`
 	StartDate   pgtype.Date `db:"start_date"`
 	EndDate     pgtype.Date `db:"end_date"`
+	UserID      pgtype.UUID `db:"user_id"`
+	ServiceName *string     `db:"service_name"`
 }
 
 func (q *Queries) SubscriptionsTotalCost(ctx context.Context, db DBTX, arg SubscriptionsTotalCostParams) (int64, error) {
 	row := db.QueryRow(ctx, subscriptionsTotalCost,
-		arg.UserID,
-		arg.ServiceName,
 		arg.StartDate,
 		arg.EndDate,
+		arg.UserID,
+		arg.ServiceName,
 	)
 	var total_cost int64
 	err := row.Scan(&total_cost)
