@@ -34,6 +34,8 @@ func NewRouter(
 		ErrorHandler:          errorHandler,
 	})
 
+	app.Use(RequestLoggerMiddleware())
+
 	api := app.Group(apiPrefix)
 
 	if cfg.App.Mode != "prod" {
@@ -49,10 +51,22 @@ func errorHandler(c *fiber.Ctx, err error) error {
 	if err == nil {
 		return nil
 	}
-	log.Err(err).Str("type", "request").Str("route", c.OriginalURL()).Send()
 
+	status := fiber.StatusInternalServerError
 	var httpErr *handler.HTTPError
 	if errors.As(err, &httpErr) {
+		status = httpErr.Code
+	}
+
+	log.Error().
+		Err(err).
+		Str("method", c.Method()).
+		Str("route", c.OriginalURL()).
+		Int("status", status).
+		Str("type", "request").
+		Send()
+
+	if httpErr != nil {
 		return c.Status(httpErr.Code).JSON(httpErr)
 	}
 
@@ -60,6 +74,7 @@ func errorHandler(c *fiber.Ctx, err error) error {
 	if errors.As(err, &fiberErr) {
 		return fiber.DefaultErrorHandler(c, err)
 	}
+
 	return c.Status(fiber.StatusInternalServerError).SendString(handler.ErrMsgInternalServerError)
 }
 
