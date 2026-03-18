@@ -36,8 +36,9 @@ func NewSubscriptionHandler(svc service.ISubscriptionService, logger zerolog.Log
 // @Produce json
 // @Param body body dto.CreateSubscriptionRequest true "Create Subscription"
 // @Success 201 {object} dto.SubscriptionResponse
-// @Failure 400 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400 {object} HTTPError "Bad Request"
+// @Failure 429 {object} HTTPError "Too Many Requests"
+// @Failure 500 {object} HTTPError "Internal Server Error"
 // @Router /subscription [post]
 func (h *SubscriptionHandler) CreateSubscription(c *fiber.Ctx) error {
 	const op = "CreateSubscription"
@@ -97,9 +98,10 @@ func (h *SubscriptionHandler) CreateSubscription(c *fiber.Ctx) error {
 // @Produce json
 // @Param id path string true "Subscription ID"
 // @Success 200 {object} dto.SubscriptionResponse
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400 {object} HTTPError "Bad Request"
+// @Failure 404 {object} HTTPError "Not Found"
+// @Failure 429 {object} HTTPError "Too Many Requests"
+// @Failure 500 {object} HTTPError "Internal Server Error"
 // @Router /subscription/{id} [get]
 func (h *SubscriptionHandler) GetSubscription(c *fiber.Ctx) error {
 	const op = "GetSubscription"
@@ -138,9 +140,10 @@ func (h *SubscriptionHandler) GetSubscription(c *fiber.Ctx) error {
 // @Param id path string true "Subscription ID"
 // @Param body body dto.UpdateSubscriptionRequest true "Update Subscription"
 // @Success 200 {object} dto.SubscriptionResponse
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400 {object} HTTPError "Bad Request"
+// @Failure 404 {object} HTTPError "Not Found"
+// @Failure 429 {object} HTTPError "Too Many Requests"
+// @Failure 500 {object} HTTPError "Internal Server Error"
 // @Router /subscription/{id} [put]
 func (h *SubscriptionHandler) UpdateSubscription(c *fiber.Ctx) error {
 	const op = "UpdateSubscription"
@@ -203,9 +206,10 @@ func (h *SubscriptionHandler) UpdateSubscription(c *fiber.Ctx) error {
 // @Produce json
 // @Param id path string true "Subscription ID"
 // @Success 204
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400 {object} HTTPError "Bad Request"
+// @Failure 404 {object} HTTPError "Not Found"
+// @Failure 429 {object} HTTPError "Too Many Requests"
+// @Failure 500 {object} HTTPError "Internal Server Error"
 // @Router /subscription/{id} [delete]
 func (h *SubscriptionHandler) DeleteSubscription(c *fiber.Ctx) error {
 	const op = "DeleteSubscription"
@@ -240,7 +244,9 @@ func (h *SubscriptionHandler) DeleteSubscription(c *fiber.Ctx) error {
 // @Param limit query int false "Limit"
 // @Param offset query int false "Offset"
 // @Success 200 {object} dto.ListSubscriptionsResponse
-// @Failure 500 {object} HTTPError
+// @Failure 400 {object} HTTPError "Bad Request"
+// @Failure 429 {object} HTTPError "Too Many Requests"
+// @Failure 500 {object} HTTPError "Internal Server Error"
 // @Router /subscription [get]
 func (h *SubscriptionHandler) ListSubscriptions(c *fiber.Ctx) error {
 	const op = "ListSubscriptions"
@@ -282,8 +288,9 @@ func (h *SubscriptionHandler) ListSubscriptions(c *fiber.Ctx) error {
 // @Param start_date query string false "Start date (DD-MM-YYYY)"
 // @Param end_date query string false "End date (DD-MM-YYYY)"
 // @Success 200 {object} dto.SubscriptionsTotalCostResponse
-// @Failure 400 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400 {object} HTTPError "Bad Request"
+// @Failure 429 {object} HTTPError "Too Many Requests"
+// @Failure 500 {object} HTTPError "Internal Server Error"
 // @Router /subscription/total-cost [get]
 func (h *SubscriptionHandler) SubscriptionsTotalCost(c *fiber.Ctx) error {
 	const op = "SubscriptionsTotalCost"

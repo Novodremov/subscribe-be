@@ -2,11 +2,13 @@ package http
 
 import (
 	"errors"
+	"time"
 
 	_ "github.com/Novodremov/subscribe-be/assets/docs"
 	"github.com/Novodremov/subscribe-be/config"
 	"github.com/Novodremov/subscribe-be/internal/delivery/http/handler"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/rs/zerolog/log"
 	fiberswag "github.com/swaggo/fiber-swagger"
 )
@@ -16,7 +18,7 @@ const (
 )
 
 // NewRouter создаёт новый fiber-роутер.
-// 
+//
 // @title           Subscribe API
 // @version         1.0
 // @description     Сервис для работы с подписками.
@@ -38,6 +40,23 @@ func NewRouter(
 
 	app.Use(RequestLoggerMiddleware())
 
+	app.Use(limiter.New(limiter.Config{
+		Max:        cfg.Http.RateLimitMaxRequests,
+		Expiration: cfg.Http.RateLimitWindow,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			log.Warn().
+				Str("method", c.Method()).
+				Str("route", c.OriginalURL()).
+				Str("ip", c.IP()).
+				Msg("rate limit exceeded")
+
+			return fiber.ErrTooManyRequests
+		},
+	}))
+
 	api := app.Group(apiPrefix)
 
 	if cfg.App.Mode != "prod" {
@@ -56,8 +75,13 @@ func errorHandler(c *fiber.Ctx, err error) error {
 
 	status := fiber.StatusInternalServerError
 	var httpErr *handler.HTTPError
-	if errors.As(err, &httpErr) {
+	var fiberErr *fiber.Error
+
+	switch {
+	case errors.As(err, &httpErr):
 		status = httpErr.Code
+	case errors.As(err, &fiberErr):
+		status = fiberErr.Code
 	}
 
 	log.Error().
@@ -66,14 +90,14 @@ func errorHandler(c *fiber.Ctx, err error) error {
 		Str("route", c.OriginalURL()).
 		Int("status", status).
 		Str("type", "request").
+		Time("time", time.Now().UTC()).
 		Send()
 
 	if httpErr != nil {
 		return c.Status(httpErr.Code).JSON(httpErr)
 	}
 
-	var fiberErr *fiber.Error
-	if errors.As(err, &fiberErr) {
+	if fiberErr != nil {
 		return fiber.DefaultErrorHandler(c, err)
 	}
 

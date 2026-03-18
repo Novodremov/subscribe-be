@@ -11,8 +11,8 @@ import (
 )
 
 type Config struct {
-	App  App  `env-prefix:"APP_"`
-	Http Http `env-prefix:"HTTP_"`
+	App      App      `env-prefix:"APP_"`
+	Http     Http     `env-prefix:"HTTP_"`
 	Database Database `env-prefix:"DB_"`
 }
 
@@ -22,29 +22,30 @@ type App struct {
 }
 
 type Http struct {
-	Port           string        `env:"PORT" env-default:"8081"`
-	ReadTimeout    time.Duration `env:"READ_TIMEOUT" env-default:"10s"`
-	WriteTimeout   time.Duration `env:"WRITE_TIMEOUT" env-default:"10s"`
-	IdleTimeout    time.Duration `env:"IDLE_TIMEOUT" env-default:"30s"`
-	BodyLimit      int           `env:"BODY_LIMIT" env-default:"1048576"`
-	ReadBufferSize int           `env:"READ_BUFFER_SIZE" env-default:"4096"`
+	Port                 string        `env:"PORT" env-default:"8081"`
+	ReadTimeout          time.Duration `env:"READ_TIMEOUT" env-default:"10s"`
+	WriteTimeout         time.Duration `env:"WRITE_TIMEOUT" env-default:"10s"`
+	IdleTimeout          time.Duration `env:"IDLE_TIMEOUT" env-default:"30s"`
+	BodyLimit            int           `env:"BODY_LIMIT" env-default:"1048576"`
+	ReadBufferSize       int           `env:"READ_BUFFER_SIZE" env-default:"4096"`
+	RateLimitMaxRequests int           `env:"RATE_LIMIT_MAX_REQUESTS" env-default:"10"`
+	RateLimitWindow      time.Duration `env:"HTTP_RATE_LIMIT_WINDOW" env-default:"1m"`
 }
 
 type Database struct {
-	Host            string        `env:"HOST" env-default:"localhost"`
-	Port            string        `env:"PORT" env-default:"5432"`
-	User            string        `env:"USER" env-default:"postgres"`
-	Password        string        `env:"PASSWORD" env-default:"postgres"`
-	Name            string        `env:"NAME" env-default:"subs"`
-	SSLMode         string        `env:"SSL_MODE" env-default:"disable"`
+	Host     string `env:"HOST" env-default:"localhost"`
+	Port     string `env:"PORT" env-default:"5432"`
+	User     string `env:"USER" env-default:"postgres"`
+	Password string `env:"PASSWORD" env-default:"postgres"`
+	Name     string `env:"NAME" env-default:"subs"`
+	SSLMode  string `env:"SSL_MODE" env-default:"disable"`
 
 	MaxOpenConns    int           `env:"MAX_OPEN_CONNS" env-default:"10"`
 	MaxIdleConns    int           `env:"MAX_IDLE_CONNS" env-default:"5"`
 	ConnMaxLifetime time.Duration `env:"CONN_MAX_LIFETIME" env-default:"1h"`
 
-	MigrationsDir   string        `env:"MIGRATIONS_DIR" env-default:"migrations"`
+	MigrationsDir string `env:"MIGRATIONS_DIR" env-default:"migrations"`
 }
-
 
 func (c Config) IsNil() bool {
 	return reflect.DeepEqual(c, Config{})

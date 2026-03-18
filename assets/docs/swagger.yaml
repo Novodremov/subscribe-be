@@ -126,6 +126,14 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/dto.ListSubscriptionsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/HTTPError'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/HTTPError'
         "500":
           description: Internal Server Error
           schema:
@@ -150,6 +158,10 @@ paths:
             $ref: '#/definitions/dto.SubscriptionResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/HTTPError'
+        "429":
+          description: Too Many Requests
           schema:
             $ref: '#/definitions/HTTPError'
         "500":
@@ -178,6 +190,10 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/HTTPError'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/HTTPError'
         "500":
           description: Internal Server Error
           schema:
@@ -203,6 +219,10 @@ paths:
             $ref: '#/definitions/HTTPError'
         "404":
           description: Not Found
+          schema:
+            $ref: '#/definitions/HTTPError'
+        "429":
+          description: Too Many Requests
           schema:
             $ref: '#/definitions/HTTPError'
         "500":
@@ -240,6 +260,10 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/HTTPError'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/HTTPError'
         "500":
           description: Internal Server Error
           schema:
@@ -273,6 +297,10 @@ paths:
             $ref: '#/definitions/dto.SubscriptionsTotalCostResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/HTTPError'
+        "429":
+          description: Too Many Requests
           schema:
             $ref: '#/definitions/HTTPError'
         "500":
